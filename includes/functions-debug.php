@@ -18,8 +18,15 @@ function yourls_debug_log( $msg ) {
     // Get the DB object ($ydb), get its profiler (\Aura\Sql\Profiler\Profiler), its logger (\Aura\Sql\Profiler\MemoryLogger) and
     // pass it a unused argument (loglevel) and the message
     // Check if function exists to allow usage of the function in very early stages
-    if(function_exists('yourls_debug_log')) {
-        yourls_get_db()->getProfiler()->getLogger()->log( 'debug', $msg);
+    if(function_exists('yourls_get_db')) {
+        try {
+            $ydb = yourls_get_db();
+            if ($ydb && method_exists($ydb, 'getProfiler')) {
+                $ydb->getProfiler()->getLogger()->log( 'debug', $msg);
+            }
+        } catch (Exception $e) {
+            // Database not initialized yet, skip logging
+        }
     }
     return $msg;
 }
@@ -31,7 +38,18 @@ function yourls_debug_log( $msg ) {
  * @return array
  */
 function yourls_get_debug_log() {
-    return yourls_get_db()->getProfiler()->getLogger()->getMessages();
+    if (!function_exists('yourls_get_db')) {
+        return [];
+    }
+    try {
+        $ydb = yourls_get_db();
+        if ($ydb && method_exists($ydb, 'getProfiler')) {
+            return $ydb->getProfiler()->getLogger()->getMessages();
+        }
+    } catch (Exception $e) {
+        // Database not initialized yet
+    }
+    return [];
 }
 
 /**
@@ -40,7 +58,18 @@ function yourls_get_debug_log() {
  * @return int
  */
 function yourls_get_num_queries() {
-    return yourls_apply_filter( 'get_num_queries', yourls_get_db()->get_num_queries() );
+    if (!function_exists('yourls_get_db')) {
+        return 0;
+    }
+    try {
+        $ydb = yourls_get_db();
+        if ($ydb && method_exists($ydb, 'get_num_queries')) {
+            return yourls_apply_filter( 'get_num_queries', $ydb->get_num_queries() );
+        }
+    } catch (Exception $e) {
+        // Database not initialized yet
+    }
+    return 0;
 }
 
 /**
@@ -52,7 +81,16 @@ function yourls_get_num_queries() {
  */
 function yourls_debug_mode( $bool ) {
     // log queries if true
-    yourls_get_db()->getProfiler()->setActive( (bool)$bool );
+    if (function_exists('yourls_get_db')) {
+        try {
+            $ydb = yourls_get_db();
+            if ($ydb && method_exists($ydb, 'getProfiler')) {
+                $ydb->getProfiler()->setActive( (bool)$bool );
+            }
+        } catch (Exception $e) {
+            // Database not initialized yet, skip
+        }
+    }
 
     // report notices if true
     $level = $bool ? -1 : ( E_ERROR | E_PARSE );

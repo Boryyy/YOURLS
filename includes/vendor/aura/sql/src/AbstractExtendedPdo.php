@@ -1009,4 +1009,17 @@ abstract class AbstractExtendedPdo extends PDO implements ExtendedPdoInterface
         $this->lazyConnect();
         return $this->pdo->setAttribute($attribute, $value);
     }
+
+    /**
+     *
+     * Returns all currently available PDO drivers.
+     * Compatibility method for PHP 8.0
+     *
+     * @return array
+     *
+     */
+    public static function getAvailableDrivers(): array
+    {
+        return \PDO::getAvailableDrivers();
+    }
 }

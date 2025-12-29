@@ -11,6 +11,7 @@
 user/*
 # ... except config sample
 !user/config-sample.php
+# Note: user/config.php is ignored (contains sensitive database credentials)
 # ... core plugins
 !user/plugins/hyphens-in-urls/
 !user/plugins/random-bg/

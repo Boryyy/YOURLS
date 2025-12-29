@@ -96,11 +96,28 @@ function yourls_upgrade_to_507() {
 
     $table = YOURLS_DB_TABLE_URL;
 
+    // Check if index already exists
+    $ydb = yourls_get_db();
+    try {
+        $indexes = $ydb->fetchObjects("SHOW INDEXES FROM `$table` WHERE Key_name = 'url_idx'");
+        if (count($indexes) > 0) {
+            echo "<p class='success'>Index 'url_idx' already exists. Skipping...</p>";
+            return;
+        }
+    } catch (\Exception $e) {
+        // If we can't check, try to add it anyway
+    }
+
     $query = sprintf("ALTER TABLE `%s` ADD INDEX `url_idx` (`url`(50));", $table);
 
     try {
-        yourls_get_db()->perform($query);
+        $ydb->perform($query);
     } catch (\Exception $e) {
+        // Check if error is about duplicate key
+        if (strpos($e->getMessage(), 'Duplicate key') !== false || strpos($e->getMessage(), '1061') !== false) {
+            echo "<p class='success'>Index 'url_idx' already exists. Skipping...</p>";
+            return;
+        }
         echo "<p class='error'>Unable to update the DB.</p>";
         echo "<p>Could not index urls. You will have to fix things manually :(. The error was
         <pre>";
